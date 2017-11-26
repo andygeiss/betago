@@ -7,9 +7,10 @@ import (
 )
 
 func main() {
+	name := "Alpha"
 	controller := mia.NewController("172.17.0.2:9000")
-	engine := mia.NewEngine()
-	bot := mia.NewBot("Alpha", controller, engine)
+	engine := mia.NewEngine(name)
+	bot := mia.NewBot(name, controller, engine)
 	if err := bot.Setup(); err != nil {
 		log.Fatal(err)
 	}
