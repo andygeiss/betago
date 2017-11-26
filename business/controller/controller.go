@@ -1,7 +1,7 @@
 package controller
 
 // Controller connects to a specific MIA backend and
-// handles the communication by reading/writting messages.
+// handles the communication by reading/writing messages.
 type Controller interface {
 	Connect() error
 	Disconnect() error

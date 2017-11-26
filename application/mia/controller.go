@@ -18,7 +18,7 @@ const (
 	ErrorConnectionAddressIsNil = "Connection address should not be nil"
 )
 
-// NewController creates a new controller and returns its adress.
+// NewController creates a new controller and returns its address.
 func NewController(address string) controller.Controller {
 	return &Controller{address, nil}
 }
