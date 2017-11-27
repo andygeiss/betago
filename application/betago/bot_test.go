@@ -1,9 +1,9 @@
-package mia_test
+package betago_test
 
 import (
 	"testing"
 
-	"github.com/andygeiss/miabot/application/mia"
+	"github.com/andygeiss/miabot/application/betago"
 	"github.com/andygeiss/miabot/business/bot"
 )
 
@@ -28,7 +28,7 @@ func (c *MockupController) Write(message string) error {
 }
 
 func TestBotIsDisconnectedAtStartup(t *testing.T) {
-	b := mia.NewBot("gobot", nil, nil)
+	b := betago.NewBot("gobot", nil, nil)
 	if b.State() != bot.StateDisconnected {
 		t.Error("State should be Disconnected at startup!")
 	}
@@ -37,7 +37,7 @@ func TestBotIsDisconnectedAtStartup(t *testing.T) {
 func TestBotIsRegisteredAfterSetup(t *testing.T) {
 	c := &MockupController{}
 	c.Inbound = "REGISTERED"
-	b := mia.NewBot("gobot", c, nil)
+	b := betago.NewBot("gobot", c, nil)
 	if err := b.Setup(); err != nil {
 		t.Errorf("Setup should not return an error! %v", err.Error())
 	}

@@ -9,14 +9,15 @@ all: clean test build
 
 build/$(APPNAME):
 	@echo Building binaries ...
-	@go build -o $@ platform/$(APPNAME)/main.go
+	@go build -o build/alphago platform/alphago/main.go
+	@go build -o build/betago platform/betago/main.go
 	@echo Done.
 
 build: build/$(APPNAME)
 
 clean:
 	@echo Cleaning up previous build ...
-	@rm -f build/$(APPNAME)
+	@rm -f build/*
 	@echo Done.
 
 init:

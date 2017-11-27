@@ -1,4 +1,4 @@
-package mia
+package betago
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/andygeiss/miabot/business/engine"
-
 	"github.com/andygeiss/miabot/business/bot"
 	"github.com/andygeiss/miabot/business/controller"
 )

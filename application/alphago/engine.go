@@ -1,4 +1,4 @@
-package mia
+package alphago
 
 import (
 	"fmt"
@@ -96,7 +96,6 @@ func (e *Engine) Handle(message string, commands chan<- string) error {
 		} else {
 			// If we are not first then we need to calculate our chance.
 			if !isDiceBetter(dice, announced) {
-				// Calculate a better dice if we are not better.
 				dice = calcBetterDice(announced)
 			}
 			command = fmt.Sprintf("ANNOUNCE;%s;%s", dice, token)
@@ -113,19 +112,35 @@ func calcBetterDice(announced string) string {
 	ap1, ap2 := aparts[0], aparts[1]
 	ad1, _ := strconv.Atoi(ap1)
 	ad2, _ := strconv.Atoi(ap2)
-	// Create a better dice
-	d1 := ad1 + 1
-	d2 := ad2 + 1
+	d1 := ad1
+	d2 := ad2
+	// If a pair was announced then create a better pair.
+	if d1 == d2 {
+		d1++
+		d2++
+		// If lower dice is 1 away from higher dice
+		// then add 1 to higher dice and set lower dice to 1
+		// Examples:  5,4 => 6,1  3,2 => 4,1
+	} else if d1-d2 == 1 {
+		// Handle Exception: 6,5 => 1,1
+		if d1 == 6 {
+			d1 = 1
+			d2 = 1
+		} else {
+			d1++
+			d2 = 1
+		}
+		// If lower dice is more than 1 away from higher dice
+		// then add 1 to lower dice.
+		// Examples:   4,2 => 4,3  6,1 => 6,2  5,3 => 5,4
+	} else {
+		d2++
+	}
 	return fmt.Sprintf("%d,%d", d1, d2)
 }
 
 func isBluffing(pos int, announced string) bool {
-	// If previous player as first then he must not lie!
-	if pos == 1 {
-		return false
-	}
-	// With each player the chance is higher for bluffing
-	// Currently we think its highly possible for a bluff after 3 turns!
+	// Method 1: With each player the chance is higher for bluffing.
 	possibility := float32(pos) * float32(0.4)
 	if possibility > 1.0 {
 		return true
@@ -143,6 +158,10 @@ func isDiceBetter(dice, announced string) bool {
 	p1, p2 := parts[0], parts[1]
 	d1, _ := strconv.Atoi(p1)
 	d2, _ := strconv.Atoi(p2)
+	// We have MIA
+	if d1 == 2 && d2 == 1 {
+		return true
+	}
 	// We have the better pair
 	if d1 == d2 && ad1 == ad2 && d1 > ad1 {
 		return true

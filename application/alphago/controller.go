@@ -1,4 +1,4 @@
-package mia
+package alphago
 
 import (
 	"fmt"
