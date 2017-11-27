@@ -72,7 +72,6 @@ func (e *Engine) Handle(message string, commands chan<- string) error {
 		if isDiceEmpty(announced) {
 			command = fmt.Sprintf("ROLL;%s", token)
 		} else {
-			// If announced dice is invalid then we should check for bluffing!
 			if !isDiceValid(announced) || isBluffing(pos, announced) {
 				command = fmt.Sprintf("SEE;%s", token)
 			} else {
@@ -121,6 +120,16 @@ func calcBetterDice(announced string) string {
 }
 
 func isBluffing(pos int, announced string) bool {
+	// If previous player as first then he must not lie!
+	if pos == 1 {
+		return false
+	}
+	// With each player the chance is higher for bluffing
+	// Currently we think its highly possible for a bluff after 3 turns!
+	possibility := float32(pos) * float32(0.4)
+	if possibility > 1.0 {
+		return true
+	}
 	return false
 }
 
