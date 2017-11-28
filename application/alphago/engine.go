@@ -15,6 +15,7 @@ import (
 type Engine struct {
 	Name      string
 	announced Announcement
+	statistic Statistic
 	mutex     sync.Mutex
 }
 
@@ -25,29 +26,24 @@ type Announcement struct {
 	Player string
 }
 
+// Statistic ...
+type Statistic struct {
+	Lost   int
+	Played int
+}
+
 // NewEngine creates a new engine and returns its address.
 func NewEngine(name string) engine.Engine {
-	return &Engine{name, Announcement{}, sync.Mutex{}}
+	return &Engine{name, Announcement{}, Statistic{0, 0}, sync.Mutex{}}
 }
 
 // Handle ...
 func (e *Engine) Handle(message string, commands chan<- string) error {
-	//
-	log.Printf("Message [%s]\n", message)
 	// Following the protocol each message from the server contains
 	// the keyword (with additional data and a token separated by a semicolon).
 	fields := strings.Split(message, ";")
 	keyword := fields[0]
 	switch keyword {
-	case "SCORE":
-
-	case "ROUND STARTING":
-		token := fields[1]
-		commands <- fmt.Sprintf("JOIN;%s", token)
-	case "ROUND STARTED":
-		e.mutex.Lock()
-		e.announced = Announcement{0, "", ""}
-		e.mutex.Unlock()
 	case "ANNOUNCED":
 		e.mutex.Lock()
 		announced := Announcement{Pos: e.announced.Pos + 1, Player: fields[1], Dice: fields[2]}
@@ -58,29 +54,19 @@ func (e *Engine) Handle(message string, commands chan<- string) error {
 			e.announced = announced
 			e.mutex.Unlock()
 		}
-	case "YOUR TURN":
-		token := fields[1]
-		// If you don't trust the previous player
-		// then you should call the player to show the dice
-		var announced string
-		var command string
-		var pos int
+	case "PLAYER LOST":
+		player := fields[1]
+		reason := fields[2]
 		e.mutex.Lock()
-		announced = e.announced.Dice
-		pos = e.announced.Pos
-		e.mutex.Unlock()
-		// If we are first, then we cannot lose by rolling a low valued dice.
-		if isDiceEmpty(announced) {
-			command = fmt.Sprintf("ROLL;%s", token)
-		} else {
-			if !isDiceValid(announced) || isBluffing(pos, announced) {
-				command = fmt.Sprintf("SEE;%s", token)
-			} else {
-				command = fmt.Sprintf("ROLL;%s", token)
-			}
+		// Show the reason why we lost!
+		if player == e.Name && reason != "MIA" {
+			e.statistic.Lost++
+			log.Printf("LOST - %s (%f)\n", reason, float32(e.statistic.Lost)/float32(e.statistic.Played))
 		}
-		// Finally send the command
-		commands <- command
+		e.statistic.Played++
+		e.mutex.Unlock()
+	case "PLAYER ROLLS":
+		//player := fields[1]
 	case "ROLLED":
 		dice, token := fields[1], fields[2]
 		// If your dice is higher than the last announced dice
@@ -109,6 +95,39 @@ func (e *Engine) Handle(message string, commands chan<- string) error {
 			command = fmt.Sprintf("ANNOUNCE;%s;%s", dice, token)
 		}
 		// Finnaly send the command
+		commands <- command
+	case "ROUND STARTED":
+		e.mutex.Lock()
+		e.announced = Announcement{0, "", ""}
+		e.mutex.Unlock()
+	case "ROUND STARTING":
+		token := fields[1]
+		commands <- fmt.Sprintf("JOIN;%s", token)
+	case "SCORE":
+		//list := fields[1]
+		//players := strings.Split(list, ",")
+	case "YOUR TURN":
+		token := fields[1]
+		// If you don't trust the previous player
+		// then you should call the player to show the dice
+		var announced string
+		var command string
+		var pos int
+		e.mutex.Lock()
+		announced = e.announced.Dice
+		pos = e.announced.Pos
+		e.mutex.Unlock()
+		// If we are first, then we cannot lose by rolling a low valued dice.
+		if isDiceEmpty(announced) {
+			command = fmt.Sprintf("ROLL;%s", token)
+		} else {
+			if !isDiceValid(announced) || isBluffing(pos, announced) {
+				command = fmt.Sprintf("SEE;%s", token)
+			} else {
+				command = fmt.Sprintf("ROLL;%s", token)
+			}
+		}
+		// Finally send the command
 		commands <- command
 	}
 	return nil

@@ -1,4 +1,4 @@
-package alphago
+package udp
 
 import (
 	"fmt"
