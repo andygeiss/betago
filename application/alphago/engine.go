@@ -3,6 +3,7 @@ package alphago
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
@@ -92,7 +93,14 @@ func (e *Engine) Handle(message string, commands chan<- string) error {
 		e.mutex.Unlock()
 		// If we are first, then we cannot lose by announcing a low valued dice.
 		if isDiceEmpty(announced) {
-			command = fmt.Sprintf("ANNOUNCE;%s;%s", dice, token)
+			// Try to bluff (a bit) to get a better chance of next player needs to bluff.
+			bluff := calcInitialDice()
+			// But if our real dice was better then use it instead.
+			if isDiceBetter(dice, bluff) {
+				command = fmt.Sprintf("ANNOUNCE;%s;%s", dice, token)
+			} else {
+				command = fmt.Sprintf("ANNOUNCE;%s;%s", bluff, token)
+			}
 		} else {
 			// If we are not first then we need to calculate our chance.
 			if !isDiceBetter(dice, announced) {
@@ -139,10 +147,45 @@ func calcBetterDice(announced string) string {
 	return fmt.Sprintf("%d,%d", d1, d2)
 }
 
+func calcInitialDice() string {
+	// We calculate our best dice to start with.
+	d1 := 4
+	d2 := 1
+	r := rand.Intn(100)
+	if r > 50 {
+		d2++
+	} else {
+		d2 += 2
+	}
+	return fmt.Sprintf("%d,%d", d1, d2)
+}
+
 func isBluffing(pos int, announced string) bool {
-	// Method 1: With each player the chance is higher for bluffing.
+
+	/* Method 1: With each player the chance is higher for bluffing.
 	possibility := float32(pos) * float32(0.4)
 	if possibility > 1.0 {
+		return true
+	}
+	*/
+
+	/* Method 2: Pairs and a higher dice with 6 should be a bluff.
+	aparts := strings.Split(announced, ",")
+	ap1, ap2 := aparts[0], aparts[1]
+	ad1, _ := strconv.Atoi(ap1)
+	ad2, _ := strconv.Atoi(ap2)
+	if ad1 == ad2 || ad1 == 6 {
+		return true
+	}
+	*/
+
+	// Method 3: Both methods mixed
+	aparts := strings.Split(announced, ",")
+	ap1, ap2 := aparts[0], aparts[1]
+	ad1, _ := strconv.Atoi(ap1)
+	ad2, _ := strconv.Atoi(ap2)
+	possibility := float32(pos) * float32(0.4)
+	if possibility > 1.0 && (ad1 == 6 || ad1 == ad2) {
 		return true
 	}
 	return false

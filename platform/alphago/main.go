@@ -8,7 +8,7 @@ import (
 
 func main() {
 	name := "AlphaGo"
-	controller := alphago.NewController("172.17.0.2:9000")
+	controller := alphago.NewController("172.17.0.3:9000")
 	engine := alphago.NewEngine(name)
 	bot := alphago.NewBot(name, controller, engine)
 	if err := bot.Setup(); err != nil {

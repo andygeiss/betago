@@ -8,14 +8,14 @@ import (
 )
 
 func TestIfControllerCanConnectWithoutAnError(t *testing.T) {
-	c := betago.NewController("172.20.0.2:9000")
+	c := betago.NewController("172.20.0.3:9000")
 	if err := c.Connect(); err != nil {
 		t.Errorf("Connect should not return an error! %v", err.Error())
 	}
 }
 
 func TestIfControllerCanDisconnectWithoutAnError(t *testing.T) {
-	c := betago.NewController("172.17.0.2:9000")
+	c := betago.NewController("172.17.0.3:9000")
 	c.Connect()
 	if err := c.Disconnect(); err != nil {
 		t.Errorf("Disconnect should not return an error! %v", err.Error())
@@ -23,7 +23,7 @@ func TestIfControllerCanDisconnectWithoutAnError(t *testing.T) {
 }
 
 func TestIfControllerCanWriteWithoutAnError(t *testing.T) {
-	c := betago.NewController("172.17.0.2:9000")
+	c := betago.NewController("172.17.0.3:9000")
 	c.Connect()
 	if err := c.Write("HEARTBEAT"); err != nil {
 		t.Errorf("Write should not return an error! %v", err.Error())
@@ -31,7 +31,7 @@ func TestIfControllerCanWriteWithoutAnError(t *testing.T) {
 }
 
 func TestIfControllerCanReadWithoutAnError(t *testing.T) {
-	c := betago.NewController("172.17.0.2:9000")
+	c := betago.NewController("172.17.0.3:9000")
 	c.Connect()
 	c.Write("REGISTER;AlphaGo")
 	responses := make(chan string)
