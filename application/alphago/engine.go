@@ -168,7 +168,7 @@ func calcBetterDice(announced string) string {
 
 func calcInitialDice() string {
 	// We calculate our best dice to start with.
-	d1 := 4
+	d1 := 5
 	d2 := 1
 	r := rand.Intn(100)
 	if r > 50 {
