@@ -31,7 +31,7 @@ func (e *Engine) Handle(message string, commands chan<- string) error {
 		reason := fields[2]
 		// Show why we lost!
 		if player == e.Name {
-			log.Printf("LOST - %s\n", reason)
+			log.Printf("WE LOST! %s\n", reason)
 		}
 	case "PLAYER ROLLS":
 		//player := fields[1]

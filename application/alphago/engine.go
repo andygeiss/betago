@@ -3,6 +3,7 @@ package alphago
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
@@ -27,13 +28,14 @@ type Announcement struct {
 
 // Statistic ...
 type Statistic struct {
-	Lost   int
-	Played int
+	Lost    int
+	Played  int
+	Players int
 }
 
 // NewEngine creates a new engine and returns its address.
 func NewEngine(name string) engine.Engine {
-	return &Engine{name, Announcement{}, Statistic{0, 0}, sync.Mutex{}}
+	return &Engine{name, Announcement{}, Statistic{0, 0, 0}, sync.Mutex{}}
 }
 
 // Handle ...
@@ -46,13 +48,8 @@ func (e *Engine) Handle(message string, commands chan<- string) error {
 	case "ANNOUNCED":
 		e.mutex.Lock()
 		announced := Announcement{Pos: e.announced.Pos + 1, Player: fields[1], Dice: fields[2]}
+		e.announced = announced
 		e.mutex.Unlock()
-		// Only save announcement if its not our bot.
-		if announced.Player != e.Name {
-			e.mutex.Lock()
-			e.announced = announced
-			e.mutex.Unlock()
-		}
 	case "PLAYER LOST":
 		player := fields[1]
 		reason := fields[2]
@@ -62,7 +59,7 @@ func (e *Engine) Handle(message string, commands chan<- string) error {
 			e.statistic.Played++
 			if player == e.Name {
 				e.statistic.Lost++
-				log.Printf("LOST - %s (%f)\n", reason, float32(e.statistic.Lost)/float32(e.statistic.Played))
+				log.Printf("[WE LOST! [ANNOUNCED %s @ %d FROM %s] [REASON %s]\n", e.announced.Dice, e.announced.Pos, e.announced.Player, reason)
 			}
 		}
 		e.mutex.Unlock()
@@ -79,8 +76,17 @@ func (e *Engine) Handle(message string, commands chan<- string) error {
 		announced = e.announced.Dice
 		e.mutex.Unlock()
 		// If we are first, then we cannot lose by announcing a low valued dice.
-		if isDiceEmpty(announced) {
-			command = fmt.Sprintf("ANNOUNCE;%s;%s", dice, token)
+		if e.announced.Pos == 0 {
+			// Lets calc our bluffing dice which should create more pressure
+			// to the following players by starting with a medium but not
+			// to aggressive dice roll value.
+			bluff := calcBluffingDice()
+			// But if our actual dice is stil better, then we should use it instead.
+			if isDiceBetter(dice, bluff) {
+				command = fmt.Sprintf("ANNOUNCE;%s;%s", dice, token)
+			} else {
+				command = fmt.Sprintf("ANNOUNCE;%s;%s", bluff, token)
+			}
 		} else {
 			if !isDiceBetter(dice, announced) {
 				dice = calcBetterDice(announced)
@@ -97,8 +103,11 @@ func (e *Engine) Handle(message string, commands chan<- string) error {
 		token := fields[1]
 		commands <- fmt.Sprintf("JOIN;%s", token)
 	case "SCORE":
-		//list := fields[1]
-		//players := strings.Split(list, ",")
+		list := fields[1]
+		players := strings.Split(list, ",")
+		e.mutex.Lock()
+		e.statistic.Players = len(players)
+		e.mutex.Unlock()
 	case "YOUR TURN":
 		token := fields[1]
 		// If you don't trust the previous player
@@ -135,26 +144,38 @@ func calcBetterDice(announced string) string {
 	d1 := ad1
 	d2 := ad2
 	// If a pair was announced then create a better pair.
+	// This should increase our risk of caught bluffing
+	// but we will lose if we announce a lower value.
 	if d1 == d2 {
 		d1++
 		d2++
-		// If lower dice is 1 away from higher dice
-		// then add 1 to higher dice and set lower dice to 1
-		// Examples:  5,4 => 6,1  3,2 => 4,1
-	} else if d1-d2 == 1 {
-		// Handle Exception: 6,5 => 1,1
-		if d1 == 6 {
-			d1 = 1
-			d2 = 1
-		} else {
-			d1++
-			d2 = 1
-		}
-		// If lower dice is more than 1 away from higher dice
-		// then add 1 to lower dice.
-		// Examples:   4,2 => 4,3  6,1 => 6,2  5,3 => 5,4
 	} else {
-		d2++
+		// Non-pair values are much safer.
+		// We use a sneaky function
+		// because it will be easy to detect bluffing
+		// if we take the next higher dice EVERY single time.
+		if d1-d2 == 1 {
+			if d1 < 6 { // (3,2 => 4,3)  (4,3 => 5,4)  (5,4 => 6,5)
+				d2 = d1
+				d1++
+			} else { // Exception: (6,5 => 1,1)
+				d1 = 1
+				d2 = 1
+			}
+		} else { // (3,1 => 4,3)  (4,1 4,2 => 5,4)  (5,1 5,2 5,3 => 6,5)
+			d2 = d1
+			d1++
+		}
+	}
+	return fmt.Sprintf("%d,%d", d1, d2)
+}
+
+func calcBluffingDice() string {
+	d1 := 4 + rand.Intn(1)
+	d2 := 1 + rand.Intn(4)
+	if d1 == d2 { // never return a pair because theres a high chance for caught bluffing
+		d1++
+		d2 -= rand.Intn(2)
 	}
 	return fmt.Sprintf("%d,%d", d1, d2)
 }
@@ -165,7 +186,7 @@ func isBluffing(pos int, announced string) bool {
 	ad1, _ := strconv.Atoi(ap1)
 	ad2, _ := strconv.Atoi(ap2)
 	// With each player the chance is higher for bluffing.
-	if pos > 1 && (ad1 == ad2 || ad1 >= 5) {
+	if (pos > 1 && ad1 == ad2) || (pos > 2 && ad1 >= 5) {
 		return true
 	}
 	return false
