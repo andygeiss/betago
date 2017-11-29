@@ -2,6 +2,7 @@ package betago
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 
@@ -22,9 +23,13 @@ type Brain struct {
 	// BMap stores the difference between the player announcement and the previous announcement
 	BMap map[string][]int
 	// RMap stores each round values
-	RMap      map[int][]int
-	RIndex    int
-	RLastname string
+	RMap               map[int][]int
+	RIndex             int
+	RLastname          string
+	RNextname          string
+	Players            []string
+	PIndex             int
+	IsLastAnnounceFake bool
 }
 
 // NewEngine creates a new engine and returns its address.
@@ -51,21 +56,29 @@ func (e *Engine) Handle(message string, commands chan<- string) error {
 		dice := fields[2]
 		e.mutex.Lock()
 		addPlayersDice(player, dice, e.brain)
-		predictPlayersDiceIsFake(player, dice, e.brain)
+		e.brain.IsLastAnnounceFake = predictPlayersDiceIsFake(player, dice, e.brain)
 		e.mutex.Unlock()
 	case "PLAYER LOST":
-		//player := fields[1]
-		//reason := fields[2]
+		player, reason := fields[1], fields[2]
+		if player == e.Name {
+			log.Printf("[WE LOST! [%s]\n", reason)
+		}
 	case "PLAYER ROLLS":
 		//player := fields[1]
 	case "ROLLED":
 		dice, token := fields[1], fields[2]
+		e.mutex.Lock()
+		dice = predictBestDiceAgainstPlayer(e.brain.RLastname, dice, e.brain)
+		e.mutex.Unlock()
 		commands <- fmt.Sprintf("ANNOUNCE;%s;%s", dice, token)
 	case "ROUND STARTED":
-		//list := fields[1]
-		//players := strings.Split(list, ",")
+		list := fields[1]
+		players := strings.Split(list, ",")
 		e.mutex.Lock()
 		e.brain.RIndex++
+		e.brain.RLastname = ""
+		e.brain.Players = players
+		e.brain.PIndex = 0
 		e.mutex.Unlock()
 	case "ROUND STARTING":
 		token := fields[1]
@@ -75,8 +88,17 @@ func (e *Engine) Handle(message string, commands chan<- string) error {
 		//players := strings.Split(list, ",")
 	case "YOUR TURN":
 		token := fields[1]
-		// commands <- fmt.Sprintf("SEE;%s", token)
-		commands <- fmt.Sprintf("ROLL;%s", token)
+		var command string
+		e.mutex.Lock()
+		if e.brain.RLastname == "" {
+			command = fmt.Sprintf("ROLL;%s", token)
+		} else if e.brain.IsLastAnnounceFake {
+			command = fmt.Sprintf("SEE;%s", token)
+		} else {
+			command = fmt.Sprintf("ROLL;%s", token)
+		}
+		e.mutex.Unlock()
+		commands <- command
 	}
 	return nil
 }
@@ -133,29 +155,56 @@ func addPlayersDice(player, dice string, brain *Brain) {
 	*/
 }
 
-func predictPlayersDiceIsFake(player, dice string, brain *Brain) string {
+func nextPlayer(brain *Brain) string {
+	index := brain.PIndex
+	players := brain.Players
+	if index == len(players)-1 {
+		return "" // Player is the last player in the current round
+	}
+	return players[index+1]
+}
+
+func predictPlayersDiceIsFake(player, dice string, brain *Brain) bool {
 	bmap := brain.BMap[player]
 	val := parseDice(dice)
 	freq := valueFrequency(val, bmap)
-	fmt.Printf("[Player: %20s] [Dice %s] is [%0.2f] a fake.\n", player, dice, freq)
-	return ""
+	//fmt.Printf("[Player: %20s] [Dice %s] is [%0.2f] a fake.\n", player, dice, freq)
+	return freq > 50
+}
+
+func predictBestDiceAgainstPlayer(player, rolled string, brain *Brain) string {
+	rmap := brain.RMap
+	round := rmap[brain.RIndex]
+	index := len(round)
+	current := parseDice(rolled)
+	if index == 0 {
+		return toDice(current)
+	}
+	previous := round[index-1]
+	best := previous + 1 // TODO: create a better/more random algorithm!
+	if current > best {
+		return toDice(current)
+	}
+	return toDice(best)
 }
 
 func valueFrequency(val int, list []int) float32 {
 	freq := 0
 	max := 0
 	for _, stored := range list {
-		if val == stored {
-			freq++
-		}
-		if stored != 0 {
-			max++
+		if val > 0 {
+			if val == stored {
+				freq++
+			}
+			if stored != 0 {
+				max++
+			}
 		}
 	}
 	if max == 0 {
 		return 100
 	}
-	return float32(freq * 100 / max)
+	return float32(freq*100/max) * 20 // 20 values available
 }
 
 // parseDice returns the value of a given dice
