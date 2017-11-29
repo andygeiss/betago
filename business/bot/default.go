@@ -1,18 +1,17 @@
-package betago
+package bot
 
 import (
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/andygeiss/miabot/business/engine"
-	"github.com/andygeiss/miabot/business/bot"
 	"github.com/andygeiss/miabot/business/controller"
+	"github.com/andygeiss/miabot/business/engine"
 )
 
-// Bot is an example implementation of a MIA bot following the protocol.
+// DefaultBot is an example implementation of a MIA bot following the protocol.
 // https://github.com/janernsting/maexchen/blob/master/protokoll.en.markdown
-type Bot struct {
+type DefaultBot struct {
 	name  string
 	state int
 	ctrl  controller.Controller
@@ -29,12 +28,12 @@ const (
 )
 
 // NewBot creates a new bot and returns its address.
-func NewBot(name string, ctrl controller.Controller, eng engine.Engine) bot.Bot {
-	return &Bot{name, bot.StateDisconnected, ctrl, eng}
+func NewBot(name string, ctrl controller.Controller, eng engine.Engine) Bot {
+	return &DefaultBot{name, StateDisconnected, ctrl, eng}
 }
 
 // Loop ...
-func (b *Bot) Loop() error {
+func (b *DefaultBot) Loop() error {
 	// Early return if engine is not valid.
 	if b.eng == nil {
 		return fmt.Errorf(ErrorEngineAddressIsNil)
@@ -62,17 +61,17 @@ func (b *Bot) Loop() error {
 }
 
 // Setup ...
-func (b *Bot) Setup() error {
+func (b *DefaultBot) Setup() error {
 	// Early return if controller is not valid.
 	if b.ctrl == nil {
 		return fmt.Errorf(ErrorControllerAddressIsNil)
 	}
 	switch b.state {
-	case bot.StateDisconnected:
+	case StateDisconnected:
 		if err := b.ctrl.Connect(); err != nil {
 			return err
 		}
-		b.state = bot.StateConnected
+		b.state = StateConnected
 		// Create a channel to catch the responses.
 		responses := make(chan string)
 		go b.ctrl.Read(responses)
@@ -87,7 +86,7 @@ func (b *Bot) Setup() error {
 			keyword := fields[0]
 			switch keyword {
 			case "REGISTERED":
-				b.state = bot.StateRegistered
+				b.state = StateRegistered
 			}
 		case <-timeout:
 		}
@@ -96,6 +95,6 @@ func (b *Bot) Setup() error {
 }
 
 // State ...
-func (b *Bot) State() int {
+func (b *DefaultBot) State() int {
 	return b.state
 }

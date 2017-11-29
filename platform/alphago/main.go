@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/andygeiss/miabot/application/alphago"
+	"github.com/andygeiss/miabot/business/bot"
 	"github.com/andygeiss/miabot/infrastructure/udp"
 )
 
@@ -11,7 +12,7 @@ func main() {
 	name := "AlphaGo"
 	controller := udp.NewController("172.17.0.3:9000")
 	engine := alphago.NewEngine(name)
-	bot := alphago.NewBot(name, controller, engine)
+	bot := bot.NewBot(name, controller, engine)
 	if err := bot.Setup(); err != nil {
 		log.Fatal(err)
 	}
