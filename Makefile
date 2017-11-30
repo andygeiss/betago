@@ -12,7 +12,7 @@ all: clean test build
 
 build/$(APPNAME):
 	@echo Building binaries ...
-	@go build -ldflags $(LDFLAGS) -o build/betago platform/betago/main.go
+	@go build -ldflags $(LDFLAGS) -o build/$(APPNAME) platform/$(APPNAME)/main.go
 	@echo Done.
 
 build: build/$(APPNAME)
@@ -30,6 +30,11 @@ init:
 	@git commit -m "Initial commit"
 	@git remote add origin git@github.com:andygeiss/$(APPNAME).git
 	@git push -u --force origin master
+
+install:
+	@echo Installing $(APPNAME) ...
+	@sudo cp build/$(APPNAME) /usr/local/bin/
+	@echo Done.
 
 test:
 	@echo Testing ...
