@@ -3,7 +3,10 @@
 
 This MIA bot uses superhuman-powers like infrared-vision to beat others.
 
-Repository: [here](https://github.com/janernsting/maexchen)
+![Logo](logo.png)
+
+Repository: [here](https://github.com/janernsting/maexchen) 
+
 Protocol: [here](https://github.com/janernsting/maexchen/blob/master/protokoll.en.markdown)
 
 ## Get the BetaGo sources
