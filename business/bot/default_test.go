@@ -27,7 +27,7 @@ func (c *MockupController) Write(message string) error {
 }
 
 func TestBotIsDisconnectedAtStartup(t *testing.T) {
-	b := bot.NewBot("gobot", nil, nil)
+	b := bot.NewDefaultBot("DefaultBot", nil, nil)
 	if b.State() != bot.StateDisconnected {
 		t.Error("State should be Disconnected at startup!")
 	}
@@ -36,7 +36,7 @@ func TestBotIsDisconnectedAtStartup(t *testing.T) {
 func TestBotIsRegisteredAfterSetup(t *testing.T) {
 	c := &MockupController{}
 	c.Inbound = "REGISTERED"
-	b := bot.NewBot("gobot", c, nil)
+	b := bot.NewDefaultBot("DefaultBot", c, nil)
 	if err := b.Setup(); err != nil {
 		t.Errorf("Setup should not return an error! %v", err.Error())
 	}

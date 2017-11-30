@@ -9,31 +9,22 @@ import (
 	"github.com/andygeiss/miabot/business/engine"
 )
 
-// DefaultBot is an example implementation of a MIA bot following the protocol.
+// SpectatorBot is an example implementation of a MIA bot following the protocol.
 // https://github.com/janernsting/maexchen/blob/master/protokoll.en.markdown
-type DefaultBot struct {
+type SpectatorBot struct {
 	name  string
 	state int
 	ctrl  controller.Controller
 	eng   engine.Engine
 }
 
-const (
-	// ErrorControllerAddressIsNil ...
-	ErrorControllerAddressIsNil = "Controller address should not be nil"
-	// ErrorControllerCommunicationTimeout ...
-	ErrorControllerCommunicationTimeout = "Controller communication timeout"
-	// ErrorEngineAddressIsNil ...
-	ErrorEngineAddressIsNil = "Engine address should not be nil"
-)
-
-// NewDefaultBot creates a new bot and returns its address.
-func NewDefaultBot(name string, ctrl controller.Controller, eng engine.Engine) Bot {
-	return &DefaultBot{name, StateDisconnected, ctrl, eng}
+// NewSpectatorBot creates a new bot and returns its address.
+func NewSpectatorBot(name string, ctrl controller.Controller, eng engine.Engine) Bot {
+	return &SpectatorBot{name, StateDisconnected, ctrl, eng}
 }
 
 // Loop ...
-func (b *DefaultBot) Loop() error {
+func (b *SpectatorBot) Loop() error {
 	// Early return if engine is not valid.
 	if b.eng == nil {
 		return fmt.Errorf(ErrorEngineAddressIsNil)
@@ -61,7 +52,7 @@ func (b *DefaultBot) Loop() error {
 }
 
 // Setup ...
-func (b *DefaultBot) Setup() error {
+func (b *SpectatorBot) Setup() error {
 	// Early return if controller is not valid.
 	if b.ctrl == nil {
 		return fmt.Errorf(ErrorControllerAddressIsNil)
@@ -76,7 +67,7 @@ func (b *DefaultBot) Setup() error {
 		responses := make(chan string)
 		go b.ctrl.Read(responses)
 		// Now send the registration message.
-		message := fmt.Sprintf("REGISTER;%s", b.name)
+		message := fmt.Sprintf("REGISTER_SPECTATOR;%s", b.name)
 		b.ctrl.Write(message)
 		// Handle the responses or timeout after 30 seconds.
 		timeout := time.After(3 * time.Second)
@@ -95,6 +86,6 @@ func (b *DefaultBot) Setup() error {
 }
 
 // State ...
-func (b *DefaultBot) State() int {
+func (b *SpectatorBot) State() int {
 	return b.state
 }

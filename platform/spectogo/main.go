@@ -3,16 +3,16 @@ package main
 import (
 	"log"
 
-	"github.com/andygeiss/miabot/application/newgo"
+	"github.com/andygeiss/miabot/application/spectogo"
 	"github.com/andygeiss/miabot/business/bot"
 	"github.com/andygeiss/miabot/infrastructure/udp"
 )
 
 func main() {
-	name := "NewGo"
+	name := "SpectoGo"
 	controller := udp.NewController("172.17.0.3:9000")
-	engine := newgo.NewEngine(name)
-	bot := bot.NewBot(name, controller, engine)
+	engine := spectogo.NewEngine(name)
+	bot := bot.NewSpectatorBot(name, controller, engine)
 	if err := bot.Setup(); err != nil {
 		log.Fatal(err)
 	}

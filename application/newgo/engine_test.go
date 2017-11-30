@@ -1,1 +1,0 @@
-package newgo_test
