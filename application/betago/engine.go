@@ -20,22 +20,22 @@ type Engine struct {
 
 // Brain ...
 type Brain struct {
-	DiceFreq            float32
-	PlayerAnnouncements map[string][]string
-	PlayerBehaviour     map[string][]int
-	PreviousAnnounced   string
-	PreviousPlayer      string
-	ShouldWeSee         bool
-	Token               string
-	ValueDiff           int
-	ValueDiffFreq       float32
+	DiceFreq           float32
+	DiceFrequencyTable map[string][]int
+	DiffFreq           float32
+	DiffFrequenceTable map[string][]int
+	PreviousAnnounced  string
+	PreviousPlayer     string
+	ShouldWeSee        bool
+	Token              string
+	ValueDiff          int
 }
 
 // NewEngine creates a new engine and returns its address.
 func NewEngine(name string) engine.Engine {
 	brain := &Brain{
-		PlayerAnnouncements: make(map[string][]string, 0),
-		PlayerBehaviour:     make(map[string][]int, 0),
+		DiceFrequencyTable: make(map[string][]int, 0),
+		DiffFrequenceTable: make(map[string][]int, 0),
 	}
 	return &Engine{name, brain, &sync.Mutex{}}
 }
@@ -48,14 +48,11 @@ func (e *Engine) Handle(message string, commands chan<- string) error {
 	case "ANNOUNCED":
 		player, dice := fields[1], fields[2]
 		e.mutex.Lock()
-		storePlayersAnnouncement(player, dice, e.brain)
 		useInfraredToSeeThroughPlayersBluff(player, dice, e.brain)
 		e.mutex.Unlock()
 	case "PLAYER LOST":
 		player, reason := fields[1], fields[2]
-		if player == e.Name && reason != "MIA" {
-			fmt.Printf("[PLAYER %20s] [LOST! %s]\n", player, reason)
-		}
+		printReason(player, reason)
 	case "PLAYER ROLLS": //player := fields[1]
 	case "PLAYER WANTS TO SEE": //player := fields[1]
 	case "ROLLED":
@@ -73,11 +70,7 @@ func (e *Engine) Handle(message string, commands chan<- string) error {
 		protocol.Join(token, commands)
 	case "SCORE": // players := fields[1]
 		e.mutex.Lock()
-		e.brain.PreviousAnnounced = ""
-		e.brain.ShouldWeSee = false
-		e.brain.ValueDiff = 0
-		e.brain.ValueDiffFreq = 0.0
-		e.brain.DiceFreq = 0.0
+		regainEnergyForNextRound(e.brain)
 		e.mutex.Unlock()
 	case "YOUR TURN":
 		token := fields[1]
@@ -96,53 +89,55 @@ func (e *Engine) Handle(message string, commands chan<- string) error {
 	return nil
 }
 
+func regainEnergyForNextRound(brain *Brain) {
+	brain.PreviousAnnounced = ""
+	brain.ShouldWeSee = false
+	brain.ValueDiff = 0
+	brain.DiffFreq = 0.0
+	brain.DiceFreq = 0.0
+}
+
+func printReason(player, reason string) {
+	if reason != "MIA" {
+		fmt.Printf("[PLAYER %20s] [LOST!    [%s]\n", player, reason)
+	}
+}
+
 func shouldWeSee(brain *Brain) bool {
 	return brain.ShouldWeSee
 }
 
-func storePlayersAnnouncement(player, dice string, brain *Brain) {
-	playerAnnouncement := brain.PlayerAnnouncements[player]
-	if playerAnnouncement == nil {
-		playerAnnouncement = make([]string, 0)
-	}
-	playerAnnouncement = append(playerAnnouncement, dice)
-	brain.PlayerAnnouncements[player] = playerAnnouncement
-}
-
-func storePlayersBehaviour(player string, diff int, brain *Brain) {
-	playerBehaviour := brain.PlayerBehaviour[player]
-	if playerBehaviour == nil {
-		playerBehaviour = make([]int, 0)
-	}
-	playerBehaviour = append(playerBehaviour, diff)
-	brain.PlayerBehaviour[player] = playerBehaviour
-	brain.ValueDiff = diff
-}
-
 func storePlayersDiffFrequency(player string, diff int, brain *Brain) {
 	if diff > 0 {
-		playerBehaviour := brain.PlayerBehaviour[player]
-		cnt, max := 0, 0
-		for _, val := range playerBehaviour {
-			if diff == val {
-				cnt++
-			}
-			max++
+		playerTable := brain.DiffFrequenceTable[player]
+		if playerTable == nil {
+			playerTable = make([]int, 21)
 		}
+		playerTable[diff]++
+		brain.DiffFrequenceTable[player] = playerTable
+		max := 0
+		for i := 0; i <= 20; i++ {
+			max += playerTable[i]
+		}
+		cnt := playerTable[diff]
 		freq := float32(cnt * 100 / max)
-		brain.ValueDiffFreq = freq
+		brain.DiffFreq = freq
 	}
 }
 
 func storePlayersDiceFrequency(player, announced string, brain *Brain) {
-	cnt, max := 0, 0
-	playerAnnouncements := brain.PlayerAnnouncements[player]
-	for _, val := range playerAnnouncements {
-		if announced == val {
-			cnt++
-		}
-		max++
+	playerTable := brain.DiceFrequencyTable[player]
+	if playerTable == nil {
+		playerTable = make([]int, 21)
 	}
+	value, _ := dice.Parse(announced)
+	playerTable[value]++
+	brain.DiceFrequencyTable[player] = playerTable
+	max := 0
+	for i := 0; i <= 20; i++ {
+		max += playerTable[i]
+	}
+	cnt := playerTable[value]
 	freq := float32(cnt * 100 / max)
 	brain.DiceFreq = freq
 }
@@ -165,19 +160,18 @@ func useInfraredToSeeThroughPlayersBluff(player, announced string, brain *Brain)
 			brain.ShouldWeSee = true
 		} else {
 			diff := current - previous
-			storePlayersBehaviour(player, diff, brain)
 			storePlayersDiceFrequency(player, announced, brain)
 			storePlayersDiffFrequency(player, diff, brain)
 			diceFreq := brain.DiceFreq
-			diffFreq := brain.ValueDiffFreq
+			diffFreq := brain.DiffFreq
 			if diffFreq >= 20.0 || diceFreq >= 20.0 {
 				brain.ShouldWeSee = true
+				fmt.Printf("[PLAYER %20s] [CATCHED! [%s] [%.2d] [%.1f | %.1f]\n", player, announced, brain.ValueDiff, brain.DiffFreq, brain.DiceFreq)
 			}
 		}
 	}
 	brain.PreviousAnnounced = announced
 	brain.PreviousPlayer = player
-	//fmt.Printf("[PLAYER %20s] [%s] [%.2d] [%.1f | %.1f]\n", player, dice, brain.ValueDiff, brain.ValueDiffFreq, brain.DiceFreq)
 }
 
 func weAreFirst(brain *Brain) bool {
