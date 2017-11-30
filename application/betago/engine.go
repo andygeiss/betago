@@ -5,6 +5,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/andygeiss/miabot/business/dice"
 	"github.com/andygeiss/miabot/business/engine"
 	"github.com/andygeiss/miabot/business/protocol"
 )
@@ -86,22 +87,22 @@ func shouldWeSee(brain *Brain) bool {
 	return brain.ShouldWeSee
 }
 
-func upgradeDiceWithSuperpower(dice string, brain *Brain) string {
-	current, _ := ParseDice(dice)
-	previous, _ := ParseDice(brain.LastAnnounced)
+func upgradeDiceWithSuperpower(rolled string, brain *Brain) string {
+	current, _ := dice.Parse(rolled)
+	previous, _ := dice.Parse(brain.LastAnnounced)
 	if previous >= current {
-		return DiceToString(previous + 1 + rand.Intn(3))
+		return dice.ToString(previous + 1 + rand.Intn(3))
 	}
-	return dice
+	return rolled
 }
 
-func useInfraredToSeeThroughPlayersBluff(player, dice string, brain *Brain) {
+func useInfraredToSeeThroughPlayersBluff(player, rolled string, brain *Brain) {
 	if brain.LastAnnounced != "" {
-		last, _ := ParseDice(brain.LastAnnounced)
+		last, _ := dice.Parse(brain.LastAnnounced)
 		if last == -1 {
 			brain.ShouldWeSee = true
 		} else {
-			last2, _ := ParseDice(brain.LastAnnounced2)
+			last2, _ := dice.Parse(brain.LastAnnounced2)
 			var diff int
 			if last2 == -1 {
 				diff = 0
@@ -114,7 +115,7 @@ func useInfraredToSeeThroughPlayersBluff(player, dice string, brain *Brain) {
 		}
 	}
 	brain.LastAnnounced2 = brain.LastAnnounced
-	brain.LastAnnounced = dice
+	brain.LastAnnounced = rolled
 	brain.LastPlayer = player
 }
 

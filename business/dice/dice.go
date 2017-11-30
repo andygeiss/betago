@@ -1,4 +1,4 @@
-package betago
+package dice
 
 import "fmt"
 
@@ -16,8 +16,8 @@ var diceTable = []string{
 	"2,1",
 }
 
-// ParseDice ...
-func ParseDice(dice string) (int, error) {
+// Parse ...
+func Parse(dice string) (int, error) {
 	for val, str := range diceTable {
 		if str == dice {
 			return val, nil
@@ -26,8 +26,8 @@ func ParseDice(dice string) (int, error) {
 	return -1, fmt.Errorf(ErrorDiceIsNotValid)
 }
 
-// DiceToString ...
-func DiceToString(value int) string {
+// ToString ...
+func ToString(value int) string {
 	if value > 20 {
 		return diceTable[20]
 	} else if value < 0 {
