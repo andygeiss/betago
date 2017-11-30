@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/andygeiss/betago/business/dice"
 	"github.com/andygeiss/betago/business/engine"
@@ -50,6 +51,7 @@ func (e *Engine) Handle(message string, commands chan<- string) error {
 	case "ANNOUNCED":
 		player, dice := fields[1], fields[2]
 		e.mutex.Lock()
+		storePlayersDiceFrequency(player, dice, e.brain)
 		useInfraredToSeeThroughPlayersBluff(player, dice, e.brain)
 		e.mutex.Unlock()
 	case "PLAYER LOST": // player, reason := fields[1], fields[2]
@@ -201,22 +203,57 @@ func storePlayersDiceFrequency(player, announced string, brain *Brain) {
 func upgradeDiceWithSuperpower(announced string, brain *Brain) string {
 	current, _ := dice.Parse(announced)
 	previous, _ := dice.Parse(brain.PreviousAnnounced)
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	diceLen := len(dice.DiceTable)
+	mia := diceLen - 1
+	// If the previous announced value is larger than our current value then calculate a better one.
+	// Ensure that we create a larger value than the previous one.
+	// Some bots will immediatily check for a value above 8 for bluffing.
 	if previous >= current {
-		return dice.ToString(previous + 1 + rand.Intn(2))
+		// We need to randomize our value to prevent being caught by bots which uses DIFF FREQUENCY checks.
+		// If bots only checks for DICE values then its optimal to increase the previous value by ONE.
+		// But later if bots will check for DIFF frequency, we will immediately get caught.
+		// So we need to balance that out to minimize the DIFF frequency per value below 20%.
+		bluff := previous + 1 + rnd.Intn(6)
+		if bluff <= mia {
+			return dice.ToString(bluff)
+		}
+		return dice.ToString(mia)
+	}
+	// If theres no previous announcment then we are first in this round!
+	// Ensure that we create medium pressure to the next player by using the closest possible value below 9 (6,1).
+	// Some bots will immediatily check for a value above 8 for bluffing.
+	if previous == -1 {
+		// We need to randomize our starting value to prevent being caught by bots which uses DICE FREQUENCY checks.
+		// Lets try the full bandwith 4,1 ... 6,5.
+		bluff := 4 + rnd.Intn(9)
+		if bluff > current {
+			return dice.ToString(bluff)
+		}
 	}
 	return announced
 }
 
 func useInfraredToSeeThroughPlayersBluff(player, announced string, brain *Brain) {
 	brain.ShouldWeSee = false
+	// If there's a previous announcement then we could check for bluffing.
+	// Out strategy is to analyse the DICE frequency and DIFF frequency of a specific player.
+	// Some bots will use some dices more than other like a fixed starting dice.
+	// With DICE frequency we will detect how often that dice was used.
+	// Some bots will increase the previous value by a fixed or less random algorithm.
+	// With DIFF frequency we will detect how often that algorithm like simply adding 1 to the value was used.
 	if brain.PreviousAnnounced != "" {
 		current, _ := dice.Parse(announced)
 		previous, _ := dice.Parse(brain.PreviousAnnounced)
+		// If the previous dice was invalid like 7,1 then we should see no matter what.
 		if previous == -1 {
 			brain.ShouldWeSee = true
 		} else {
+			// Get the difference between the last announcment and current value.
+			// There are 20 possible dices (100%)
+			// Each dice has an equal chance of 5% over time.
+			// Thus the DIFF frequency of each dice should be around 5 percent.
 			diff := current - previous
-			storePlayersDiceFrequency(player, announced, brain)
 			storePlayersDiffFrequency(player, diff, brain)
 			diceFreq := brain.DiceFreq
 			diffFreq := brain.DiffFreq

@@ -20,8 +20,8 @@ var (
 )
 
 func main() {
-	addr := flag.String("-addr", "", "MIA server address (host:port)")
-	name := flag.String("-name", "BetaGo", "MIA Bot name")
+	addr := flag.String("addr", "", "MIA server address (host:port)")
+	name := flag.String("name", "BetaGo", "MIA Bot name")
 	flag.Parse()
 	if *addr == "" {
 		printUsage()
