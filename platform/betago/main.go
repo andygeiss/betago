@@ -10,7 +10,7 @@ import (
 
 func main() {
 	name := "BetaGo"
-	controller := udp.NewController("172.17.0.2:9000")
+	controller := udp.NewController("172.17.0.3:9000")
 	engine := betago.NewEngine(name)
 	bot := bot.NewBot(name, controller, engine)
 	if err := bot.Setup(); err != nil {

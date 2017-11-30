@@ -1,9 +1,9 @@
 package newgo
 
 import (
-	"fmt"
-	"log"
 	"strings"
+
+	"github.com/andygeiss/miabot/business/protocol"
 
 	"github.com/andygeiss/miabot/business/engine"
 )
@@ -20,35 +20,24 @@ func NewEngine(name string) engine.Engine {
 
 // Handle ...
 func (e *Engine) Handle(message string, commands chan<- string) error {
-	// Following the protocol each message from the server contains
-	// the keyword (with additional data and a token separated by a semicolon).
 	fields := strings.Split(message, ";")
 	keyword := fields[0]
 	switch keyword {
 	case "ANNOUNCED":
-	case "PLAYER LOST":
-		player := fields[1]
-		reason := fields[2]
-		// Show why we lost!
-		if player == e.Name {
-			log.Printf("WE LOST! %s\n", reason)
-		}
-	case "PLAYER ROLLS":
-		//player := fields[1]
+	case "PLAYER LOST": //player, reason := fields[1], fields[2]
+	case "PLAYER ROLLS": //player := fields[1]
+	case "PLAYER WANTS TO SEE": //player := fields[1]
 	case "ROLLED":
 		dice, token := fields[1], fields[2]
-		commands <- fmt.Sprintf("ANNOUNCE;%s;%s", dice, token)
-	case "ROUND STARTED":
+		protocol.Announce(dice, token, commands)
+	case "ROUND STARTED": // players := fields[1]
 	case "ROUND STARTING":
 		token := fields[1]
-		commands <- fmt.Sprintf("JOIN;%s", token)
-	case "SCORE":
-		//list := fields[1]
-		//players := strings.Split(list, ",")
+		protocol.Join(token, commands)
+	case "SCORE": // players := fields[1]
 	case "YOUR TURN":
 		token := fields[1]
-		// commands <- fmt.Sprintf("SEE;%s", token)
-		commands <- fmt.Sprintf("ROLL;%s", token)
+		protocol.Roll(token, commands)
 	}
 	return nil
 }

@@ -1,1 +1,0 @@
-package alphago_test
