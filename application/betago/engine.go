@@ -3,6 +3,8 @@ package betago
 import (
 	"fmt"
 	"math/rand"
+	"os"
+	"os/exec"
 	"strings"
 	"sync"
 
@@ -50,9 +52,7 @@ func (e *Engine) Handle(message string, commands chan<- string) error {
 		e.mutex.Lock()
 		useInfraredToSeeThroughPlayersBluff(player, dice, e.brain)
 		e.mutex.Unlock()
-	case "PLAYER LOST":
-		player, reason := fields[1], fields[2]
-		printReason(player, reason)
+	case "PLAYER LOST": // player, reason := fields[1], fields[2]
 	case "PLAYER ROLLS": //player := fields[1]
 	case "PLAYER WANTS TO SEE": //player := fields[1]
 	case "ROLLED":
@@ -71,6 +71,7 @@ func (e *Engine) Handle(message string, commands chan<- string) error {
 	case "SCORE": // players := fields[1]
 		e.mutex.Lock()
 		regainEnergyForNextRound(e.brain)
+		printStatistics(e.brain)
 		e.mutex.Unlock()
 	case "YOUR TURN":
 		token := fields[1]
@@ -89,18 +90,70 @@ func (e *Engine) Handle(message string, commands chan<- string) error {
 	return nil
 }
 
+func printStatistics(brain *Brain) {
+	cmd := exec.Command("clear")
+	cmd.Stdout = os.Stdout
+	cmd.Run()
+	diceLen := len(dice.DiceTable)
+	// Diff
+	printLine()
+	fmt.Printf("[%20s] ", "Diff-Frequency")
+	for i := 0; i < diceLen; i++ {
+		fmt.Printf("[%3d] ", i)
+	}
+	fmt.Print("\n")
+	printLine()
+	for player, playerTable := range brain.DiffFrequenceTable {
+		fmt.Printf("[%20s] ", player)
+		max := 0
+		for i := 0; i < diceLen; i++ {
+			max += playerTable[i]
+		}
+		for _, diff := range playerTable {
+			freq := diff * 100 / max
+			fmt.Printf("[%3d] ", freq)
+		}
+		fmt.Print("\n")
+	}
+	fmt.Print("\n")
+	// Dice
+	printLine()
+	fmt.Printf("[%20s] ", "Dice-Frequency")
+	for i := 0; i < diceLen; i++ {
+		fmt.Printf("[%3s] ", dice.DiceTable[i])
+	}
+	fmt.Print("\n")
+	printLine()
+	for player, playerTable := range brain.DiceFrequencyTable {
+		fmt.Printf("[%20s] ", player)
+		max := 0
+		for i := 0; i < diceLen; i++ {
+			max += playerTable[i]
+		}
+		for _, diff := range playerTable {
+			freq := diff * 100 / max
+			fmt.Printf("[%3d] ", freq)
+		}
+		fmt.Print("\n")
+	}
+	fmt.Print("\n")
+}
+
+func printLine() {
+	fmt.Print("[--------------------] ")
+	for i := 0; i <= 20; i++ {
+		fmt.Print("[---] ")
+	}
+	fmt.Print("\n")
+
+}
+
 func regainEnergyForNextRound(brain *Brain) {
 	brain.PreviousAnnounced = ""
 	brain.ShouldWeSee = false
 	brain.ValueDiff = 0
 	brain.DiffFreq = 0.0
 	brain.DiceFreq = 0.0
-}
-
-func printReason(player, reason string) {
-	if reason != "MIA" {
-		fmt.Printf("[PLAYER %20s] [LOST!    [%s]\n", player, reason)
-	}
 }
 
 func shouldWeSee(brain *Brain) bool {
@@ -166,7 +219,6 @@ func useInfraredToSeeThroughPlayersBluff(player, announced string, brain *Brain)
 			diffFreq := brain.DiffFreq
 			if diffFreq >= 20.0 || diceFreq >= 20.0 {
 				brain.ShouldWeSee = true
-				fmt.Printf("[PLAYER %20s] [CATCHED! [%s] [%.2d] [%.1f | %.1f]\n", player, announced, brain.ValueDiff, brain.DiffFreq, brain.DiceFreq)
 			}
 		}
 	}

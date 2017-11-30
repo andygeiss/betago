@@ -7,7 +7,8 @@ const (
 	ErrorDiceIsNotValid = "Dice is not valid"
 )
 
-var diceTable = []string{
+// DiceTable ...
+var DiceTable = []string{
 	"3,1", "3,2",
 	"4,1", "4,2", "4,3",
 	"5,1", "5,2", "5,3", "5,4",
@@ -18,7 +19,7 @@ var diceTable = []string{
 
 // Parse ...
 func Parse(dice string) (int, error) {
-	for val, str := range diceTable {
+	for val, str := range DiceTable {
 		if str == dice {
 			return val, nil
 		}
@@ -29,9 +30,9 @@ func Parse(dice string) (int, error) {
 // ToString ...
 func ToString(value int) string {
 	if value > 20 {
-		return diceTable[20]
+		return DiceTable[20]
 	} else if value < 0 {
-		return diceTable[0]
+		return DiceTable[0]
 	}
-	return diceTable[value]
+	return DiceTable[value]
 }
