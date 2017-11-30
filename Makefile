@@ -1,6 +1,9 @@
 
+
 APPNAME=$(shell cat APPNAME)
+BUILD=$(shell date -u +%Y%m%d%H%M%S)
 VERSION=$(shell cat VERSION)
+LDFLAGS="-X main.APPNAME=$(APPNAME) -X main.BUILD=$(BUILD) -X main.VERSION=$(VERSION)"
 
 # needed for building static binaries which uses networking
 export CGO_ENABLED=0
@@ -9,8 +12,7 @@ all: clean test build
 
 build/$(APPNAME):
 	@echo Building binaries ...
-	@go build -o build/betago platform/betago/main.go
-	@go build -o build/spectogo platform/spectogo/main.go
+	@go build -ldflags $(LDFLAGS) -o build/betago platform/betago/main.go
 	@echo Done.
 
 build: build/$(APPNAME)
