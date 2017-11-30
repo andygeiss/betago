@@ -3,7 +3,7 @@ package dice_test
 import (
 	"testing"
 
-	"github.com/andygeiss/miabot/business/dice"
+	"github.com/andygeiss/betago/business/dice"
 )
 
 func TestIfParseDiceOf_3_1_Returns_0(t *testing.T) {

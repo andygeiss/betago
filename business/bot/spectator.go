@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/andygeiss/miabot/business/controller"
-	"github.com/andygeiss/miabot/business/engine"
+	"github.com/andygeiss/betago/business/controller"
+	"github.com/andygeiss/betago/business/engine"
 )
 
 // SpectatorBot is an example implementation of a MIA bot following the protocol.

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/andygeiss/miabot/business/controller"
+	"github.com/andygeiss/betago/business/controller"
 )
 
 // Controller ...

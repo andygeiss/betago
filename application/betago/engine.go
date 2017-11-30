@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/andygeiss/miabot/business/dice"
-	"github.com/andygeiss/miabot/business/engine"
-	"github.com/andygeiss/miabot/business/protocol"
+	"github.com/andygeiss/betago/business/dice"
+	"github.com/andygeiss/betago/business/engine"
+	"github.com/andygeiss/betago/business/protocol"
 )
 
 // Engine ...

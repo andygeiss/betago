@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/andygeiss/miabot/infrastructure/udp"
+	"github.com/andygeiss/betago/infrastructure/udp"
 )
 
 func TestIfControllerCanConnectWithoutAnError(t *testing.T) {

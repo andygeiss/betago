@@ -3,7 +3,7 @@ package bot_test
 import (
 	"testing"
 
-	"github.com/andygeiss/miabot/business/bot"
+	"github.com/andygeiss/betago/business/bot"
 )
 
 type MockupController struct {

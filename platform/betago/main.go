@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/andygeiss/miabot/application/betago"
-	"github.com/andygeiss/miabot/business/bot"
-	"github.com/andygeiss/miabot/infrastructure/udp"
+	"github.com/andygeiss/betago/application/betago"
+	"github.com/andygeiss/betago/business/bot"
+	"github.com/andygeiss/betago/infrastructure/udp"
 )
 
 var (

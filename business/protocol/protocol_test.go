@@ -3,7 +3,7 @@ package protocol_test
 import (
 	"testing"
 
-	"github.com/andygeiss/miabot/business/protocol"
+	"github.com/andygeiss/betago/business/protocol"
 )
 
 func TestIfAnnounceIsValid(t *testing.T) {
