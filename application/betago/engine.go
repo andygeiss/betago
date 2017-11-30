@@ -141,7 +141,8 @@ func printStatistics(brain *Brain) {
 
 func printLine() {
 	fmt.Print("[--------------------] ")
-	for i := 0; i <= 20; i++ {
+	diceLen := len(dice.DiceTable)
+	for i := 0; i < diceLen; i++ {
 		fmt.Print("[---] ")
 	}
 	fmt.Print("\n")
@@ -162,14 +163,15 @@ func shouldWeSee(brain *Brain) bool {
 
 func storePlayersDiffFrequency(player string, diff int, brain *Brain) {
 	if diff > 0 {
+		diceLen := len(dice.DiceTable)
 		playerTable := brain.DiffFrequenceTable[player]
 		if playerTable == nil {
-			playerTable = make([]int, 21)
+			playerTable = make([]int, diceLen)
 		}
 		playerTable[diff]++
 		brain.DiffFrequenceTable[player] = playerTable
 		max := 0
-		for i := 0; i <= 20; i++ {
+		for i := 0; i < diceLen; i++ {
 			max += playerTable[i]
 		}
 		cnt := playerTable[diff]
@@ -179,15 +181,16 @@ func storePlayersDiffFrequency(player string, diff int, brain *Brain) {
 }
 
 func storePlayersDiceFrequency(player, announced string, brain *Brain) {
+	diceLen := len(dice.DiceTable)
 	playerTable := brain.DiceFrequencyTable[player]
 	if playerTable == nil {
-		playerTable = make([]int, 21)
+		playerTable = make([]int, diceLen)
 	}
 	value, _ := dice.Parse(announced)
 	playerTable[value]++
 	brain.DiceFrequencyTable[player] = playerTable
 	max := 0
-	for i := 0; i <= 20; i++ {
+	for i := 0; i < diceLen; i++ {
 		max += playerTable[i]
 	}
 	cnt := playerTable[value]
