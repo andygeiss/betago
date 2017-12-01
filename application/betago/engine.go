@@ -215,10 +215,11 @@ func upgradeDiceWithSuperpower(announced string, brain *Brain) string {
 		// But later if bots will check for DIFF frequency, we will immediately get caught.
 		// So we need to balance that out to minimize the DIFF frequency per value below 20%.
 		bluff := previous + 1 + rnd.Intn(6)
-		if bluff <= mia {
+		if bluff < mia {
 			return dice.ToString(bluff)
 		}
-		return dice.ToString(mia)
+		bluff = mia - rnd.Intn(6)
+		return dice.ToString(bluff)
 	}
 	// If theres no previous announcment then we are first in this round!
 	// Ensure that we create medium pressure to the next player by using the closest possible value below 9 (6,1).
