@@ -1,8 +1,10 @@
 # Binary settings
 USER=andygeiss
 APPNAME=$(shell cat APPNAME)
-TS=$(shell date -u '+%Y/%m/%d %H:%M:%S') 
-LDFLAGS="-s"
+BUILD=$(shell date -u +%Y%m%d%H%M%S)
+VERSION=$(shell cat VERSION)
+LDFLAGS="-s -X main.APPNAME=$(APPNAME) -X main.BUILD=$(BUILD) -X main.VERSION=$(VERSION)"
+TS=$(shell date -u '+%Y/%m/%d %H:%M:%S')
 
 all: clean test build
 
